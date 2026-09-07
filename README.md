@@ -233,5 +233,75 @@ curl -X GET "http://localhost:8000/api/v1/health"
 
 ---
 
-## 📄 Lisensi
-Didistribusikan di bawah lisensi internal perusahaan.
+🧠 Panduan Lengkap: Fungsi & Cara Penggunaan Aplikasi Enterprise RAG
+Aplikasi ini adalah Enterprise Knowledge Base AI Assistant berbasis teknologi RAG (Retrieval-Augmented Generation) yang dirancang khusus untuk lingkungan perusahaan.
+
+🎯 1. Apa Fungsi Utama Aplikasi Ini?
+Di perusahaan, dokumen sering kali tersebar di berbagai tempat (SOP, Confluence, Notion, PDF kebijakan HR, arsitektur teknis). Karyawan sering kesulitan mencari informasi yang tepat secara cepat.
+
+Aplikasi ini berfungsi sebagai Otak Digital Perusahaan (Internal AI Assistant) yang dapat:
+
+Menjawab Pertanyaan Karyawan Secara Akurat: Karyawan cukup bertanya dalam bahasa sehari-hari, dan AI akan mencari potongan dokumen yang relevan lalu menyusun jawaban yang tepat.
+Bebas Halusinasi (Fakta Terverifikasi): AI hanya menjawab berdasarkan dokumen resmi yang sudah diunggah, lengkap dengan kutipan sumber dokumen (citations) dan skor relevansinya.
+Menjaga Kerahasiaan Data (Keamanan RBAC): Setiap dokumen dikelompokkan ke dalam Space (misal: HR, ENG, OPS). Karyawan divisi Engineering tidak bisa mengintip dokumen rahasia HR, dan karyawan umum hanya bisa melihat dokumen publik perusahaan.
+Privasi 100% Lokal: Menggunakan model AI lokal (Ollama) dan database lokal (ChromaDB), sehingga data rahasia perusahaan tidak pernah bocor ke internet/pihak ketiga.
+🌟 2. Fitur-Fitur Unggulan
+Fitur	Fungsi
+💬 AI Chat Assistant	Ruang interaksi tanya-jawab cerdas dengan respons terformat dan kartu referensi sumber dokumen.
+👑 1-Click Role Switcher	Kemudahan berganti peran (Admin, Engineering, Employee) dengan 1 klik untuk menguji hak akses dokumen.
+📥 Ingestion Hub	Tempat memasukkan dokumen baru (input manual atau sinkronisasi otomatis Confluence & Notion).
+🛡️ Role-Based Space Filtering	Sistem otomatis menyaring dokumen yang boleh dilihat sesuai role pengguna yang login.
+📊 Knowledge Explorer & Health	Panel pemantau kesehatan server, status model AI Ollama, dan jumlah total data vektor yang tersimpan.
+🚀 3. Panduan Langkah Demi Langkah Cara Menggunakannya
+🔹 Langkah 1: Jalankan Server
+Pastikan server FastAPI Anda sudah aktif di terminal:
+
+powershell
+# 1. Masuk ke folder proyek dan aktifkan venv
+.\venv\Scripts\activate
+# 2. Jalankan server Uvicorn
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+🔹 Langkah 2: Buka Web Dashboard
+Buka browser Anda dan akses alamat: 👉 http://localhost:8000/
+
+(Tampilan antarmuka modern bernuansa Glassmorphism Dark Theme akan langsung muncul)
+
+🔹 Langkah 3: Pilih Role Pengguna (Di Bagian Kanan Atas)
+Di bagian pojok kanan atas navbar, terdapat 3 tombol role:
+
+👑 Admin: Memiliki akses ke seluruh dokumen (*) dan memiliki izin untuk mengunggah dokumen baru (can_sync: true).
+⚙️ Engineering: Hanya dapat membaca dokumen teknis & operasional (ENG, OPS, GENERAL).
+👔 Employee: Hanya dapat membaca dokumen kebijakan umum & SDM (HR, GENERAL).
+Cukup klik tombol role yang diinginkan, sistem akan langsung menyesuaikan izin akses secara otomatis di latar belakang.
+
+🔹 Langkah 4: Menambahkan Dokumen Perusahaan (Ingestion)
+Pastikan role Anda aktif sebagai 👑 Admin.
+Klik tab 📥 Ingestion Hub di bagian atas.
+Masukkan data dokumen pada form:
+Judul Dokumen: Misal Kebijakan Jam Kerja & Cuti 2026
+Kategori Space: Pilih HR
+Isi Konten: Tempelkan teks SOP atau aturan kerja.
+Klik tombol 📥 Indeks Dokumen ke Vector DB.
+Dokumen akan otomatis dipotong (chunking), diubah menjadi vektor embedding, dan disimpan ke database ChromaDB.
+🔹 Langkah 5: Mengajukan Pertanyaan ke AI (Chat RAG)
+Klik tab 💬 AI Assistant (Chat).
+Ketik pertanyaan Anda di kotak pesan bawah, misalnya:
+"Berapa hari jatah cuti tahunan yang berhak saya ambil?"
+"Bagaimana arsitektur Kubernetes dan proses CI/CD kita?"
+(Atau klik salah satu tombol saran pertanyaan cepat / chips di tengah layar).
+Tekan Enter atau klik tombol Kirim (➤).
+Hasil yang Didapat:
+AI akan memberikan jawaban ringkas dan jelas.
+Di bawah jawaban, terdapat bagian 📚 Referensi Dokumen yang menampilkan judul dokumen asli, kategori Space, dan skor relevansi (cosine score).
+🔹 Langkah 6: Menguji Keamanan Hak Akses (RBAC Test)
+Coba uji sistem keamanan ini:
+
+Ganti role ke 👔 Employee di pojok kanan atas.
+Tanyakan hal teknis: "Bagaimana konfigurasi server Kubernetes?"
+AI akan menjawab secara jujur bahwa informasi tersebut tidak ditemukan / tidak memiliki izin akses, karena dokumen tersebut berada di space ENG yang terkunci untuk role Employee.
+Ganti kembali ke role ⚙️ Engineering atau 👑 Admin, lalu tanyakan hal yang sama. AI akan langsung memberikan jawaban teknis secara lengkap!
+💡 Ringkasan Nilai Tambah untuk Bisnis
+⏱️ Hemat Waktu: Karyawan tidak perlu lagi membaca puluhan lembar PDF SOP hanya untuk mencari 1 aturan spesifik.
+🔒 Aman & Terkendali: Dokumen sensitif keuangan/HR tidak bisa sembarangan diakses oleh pihak luar maupun divisi yang tidak berwenang.
+📈 Mudah Dikembangkan: Siap dihubungkan langsung ke database Confluence, Notion, Jira, atau database internal perusahaan lainnya.
+
