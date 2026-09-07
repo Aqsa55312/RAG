@@ -1,0 +1,101 @@
+{
+  "project_info": {
+    "name": "Enterprise Knowledge Base RAG",
+    "version": "1.0.0",
+    "environment": "development"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": true,
+    "api_prefix": "/api/v1",
+    "cors_origins": [
+      "http://localhost:3000",
+      "https://internal.company.com"
+    ]
+  },
+  "llm_provider": {
+    "provider": "ollama",
+    "base_url": "http://localhost:11434",
+    "models": {
+      "generation": {
+        "name": "llama3",
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "max_tokens": 2048,
+        "context_window": 8192
+      },
+      "embedding": {
+        "name": "nomic-embed-text",
+        "dimension": 768
+      }
+    }
+  },
+  "vector_store": {
+    "provider": "chromadb",
+    "persist_directory": "./data/chroma_db",
+    "collection_name": "enterprise_knowledge",
+    "distance_metric": "cosine"
+  },
+  "ingestion_pipeline": {
+    "chunking": {
+      "chunk_size": 1000,
+      "chunk_overlap": 150,
+      "separators": ["\n\n", "\n", " ", ""]
+    },
+    "connectors": {
+      "confluence": {
+        "enabled": true,
+        "base_url": "https://your-domain.atlassian.net",
+        "auth": {
+          "email_env_var": "CONFLUENCE_USERNAME",
+          "api_token_env_var": "CONFLUENCE_API_TOKEN"
+        },
+        "default_spaces": ["ENG", "HR", "OPS"],
+        "sync_interval_hours": 24
+      },
+      "notion": {
+        "enabled": true,
+        "auth": {
+          "api_key_env_var": "NOTION_API_KEY"
+        },
+        "database_ids": [
+          "database_id_sop_internal",
+          "database_id_tech_docs"
+        ]
+      }
+    }
+  },
+  "rag_settings": {
+    "retrieval": {
+      "top_k": 4,
+      "search_type": "hybrid",
+      "reranking": {
+        "enabled": false,
+        "model": "bge-reranker-large"
+      }
+    },
+    "prompts": {
+      "system_prompt": "Anda adalah Asisten AI Internal Perusahaan. Jawab pertanyaan hanya berdasarkan konteks yang diberikan di bawah ini. Jika jawaban tidak ditemukan di dalam konteks, katakan secara jujur bahwa Anda tidak tahu. Jangan mengarang informasi.",
+      "rag_template": "Konteks Dokumen:\n{context}\n\nPertanyaan User: {question}\n\nJawaban Sesuai Konteks (sertakan referensi sumber):"
+    }
+  },
+  "security_and_access": {
+    "auth_required": true,
+    "jwt_secret_env_var": "JWT_SECRET_KEY",
+    "rbac_roles": {
+      "admin": {
+        "allowed_spaces": ["*"],
+        "can_sync": true
+      },
+      "engineering": {
+        "allowed_spaces": ["ENG", "OPS", "GENERAL"],
+        "can_sync": false
+      },
+      "employee": {
+        "allowed_spaces": ["HR", "GENERAL"],
+        "can_sync": false
+      }
+    }
+  }
+}

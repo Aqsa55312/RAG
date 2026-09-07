@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Knowledge Base AI - RAG Dashboard</title>
+  <meta name="description" content="Enterprise Retrieval-Augmented Generation (RAG) platform with Ollama, ChromaDB, Confluence, Notion, and Role-Based Access Control.">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%2222%22 font-size=%2220%22>✨</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <a href="#" class="brand">
+      <div class="brand-icon">✨</div>
+      <div class="brand-info">
+        <h1>Enterprise AI</h1>
+        <span>Knowledge Base RAG</span>
+      </div>
+    </a>
+
+    <!-- Live Status Indicators -->
+    <div class="status-bar">
+      <div class="status-item">
+        <span id="db-status-dot" class="dot online"></span>
+        <span id="db-status-text">ChromaDB</span>
+      </div>
+      <div class="status-item">
+        <span id="ollama-status-dot" class="dot online"></span>
+        <span id="ollama-status-text">Ollama Ready</span>
+      </div>
+      <div class="status-item">
+        <span class="badge badge-general" id="vector-count-pill">0 Vektor</span>
+      </div>
+    </div>
+
+    <!-- 1-Click RBAC Role Switcher -->
+    <div class="role-switcher">
+      <button class="role-btn active" data-role="admin" title="Akses Penuh Semua Space (*)">
+        👑 Admin
+      </button>
+      <button class="role-btn" data-role="engineering" title="Akses ENG, OPS, GENERAL">
+        ⚙️ Engineering
+      </button>
+      <button class="role-btn" data-role="employee" title="Akses HR, GENERAL">
+        👔 Employee
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+    
+    <!-- Tab Navigation -->
+    <div class="tabs-nav">
+      <button class="tab-link active" data-tab="tab-chat">
+        💬 AI Assistant (Chat)
+      </button>
+      <button class="tab-link" data-tab="tab-ingest">
+        📥 Ingestion Hub
+      </button>
+      <button class="tab-link" data-tab="tab-explorer">
+        📊 Knowledge Explorer & Health
+      </button>
+    </div>
+
+    <!-- ======================================================================
+         TAB 1: AI ASSISTANT / CHAT
+         ====================================================================== -->
+    <section id="tab-chat" class="tab-content active">
+      <div class="chat-wrapper">
+        
+        <!-- Main Chat Window -->
+        <div class="chat-card">
+          <div class="chat-header">
+            <div class="chat-header-title">
+              <span>🤖 Tanya Jawab Dokumen Perusahaan</span>
+            </div>
+            <div class="chat-header-actions">
+              <button id="clear-chat-btn" class="btn-icon" title="Bersihkan Percakapan">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages Container -->
+          <div id="chat-messages" class="chat-messages">
+            <div id="empty-chat-state" class="empty-chat">
+              <div class="empty-icon">🤖</div>
+              <h3>Enterprise Knowledge Assistant</h3>
+              <p>Ajukan pertanyaan seputar dokumen perusahaan, arsitektur teknis, SOP operasional, atau kebijakan HR.</p>
+              <div class="prompt-chips">
+                <button class="chip" data-prompt="Bagaimana arsitektur Kubernetes & CI/CD?">🚀 Arsitektur Kubernetes</button>
+                <button class="chip" data-prompt="Berapa jatah cuti tahunan karyawan?">🌴 Kebijakan Cuti HR</button>
+                <button class="chip" data-prompt="Apa SOP monitoring server & respons alert?">⚡ SOP Monitoring OPS</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <textarea 
+              id="chat-input" 
+              class="input-box" 
+              placeholder="Ketik pertanyaan Anda di sini... (Tekan Enter untuk kirim, Shift+Enter untuk baris baru)"
+              rows="1"
+            ></textarea>
+            <button id="send-btn" class="btn-send" title="Kirim Pertanyaan">
+              ➤
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Sidebar Controls -->
+        <aside class="chat-sidebar">
+          
+          <!-- RBAC Context Card -->
+          <div class="side-card">
+            <h4>🛡️ Kontrol Akses (RBAC)</h4>
+            <div class="form-group">
+              <label>Role Aktif:</label>
+              <div id="active-role-badge" class="badge badge-eng" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">ADMIN</div>
+            </div>
+            <div class="form-group">
+              <label>Ruang Data yang Diizinkan:</label>
+              <div id="allowed-spaces-badge" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">* (Semua Space)</div>
+            </div>
+          </div>
+
+          <!-- Retrieval Filters -->
+          <div class="side-card">
+            <h4>⚙️ Parameter Retrieval</h4>
+            <div class="form-group">
+              <label for="filter-space-select">Filter Kategori (Space):</label>
+              <select id="filter-space-select" class="form-control">
+                <option value="">Semua Space yang Diizinkan</option>
+                <option value="ENG">ENG (Engineering)</option>
+                <option value="HR">HR (Human Resources)</option>
+                <option value="OPS">OPS (Operations)</option>
+                <option value="GENERAL">GENERAL</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Top-K Dokumen: <span id="top-k-val" class="range-val">4</span></label>
+              <div class="range-slider">
+                <input id="top-k-slider" type="range" min="1" max="10" value="4">
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 2: INGESTION HUB
+         ====================================================================== -->
+    <section id="tab-ingest" class="tab-content">
+      <div class="ingest-grid">
+        
+        <!-- Manual Document Ingestion -->
+        <div class="card">
+          <div class="card-title">📝 Ingest Dokumen Manual</div>
+          <div class="card-desc">Tambahkan dokumen teks, SOP, kebijakan, atau panduan teknis langsung ke dalam Vector Store.</div>
+
+          <div id="rbac-ingest-warning" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.85rem;">
+            ⚠️ Hanya role <strong>ADMIN</strong> yang memiliki izin untuk melakukan sinkronisasi/ingestion data.
+          </div>
+
+          <form id="manual-ingest-form">
+            <div class="form-group">
+              <label for="doc-title">Judul Dokumen:</label>
+              <input id="doc-title" type="text" class="form-control" placeholder="Contoh: SOP Penanganan Insiden Keamanan" required>
+            </div>
+
+            <div class="form-group">
+              <label for="doc-space">Kategori Ruang Data (Space):</label>
+              <select id="doc-space" class="form-control" required>
+                <option value="ENG">ENG - Engineering & Architecture</option>
+                <option value="HR">HR - Human Resources & Culture</option>
+                <option value="OPS">OPS - Operations & SOP</option>
+                <option value="GENERAL">GENERAL - Public & General Info</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="doc-content">Isi Konten Dokumen:</label>
+              <textarea id="doc-content" class="form-control" rows="8" placeholder="Tuliskan atau tempel konten teks dokumen di sini..." required></textarea>
+            </div>
+
+            <button type="submit" id="ingest-submit-btn" class="btn-primary">
+              📥 Indeks Dokumen ke Vector DB
+            </button>
+          </form>
+        </div>
+
+        <!-- External Connectors Sync -->
+        <div class="card">
+          <div class="card-title">🔄 Konektor Enterprise</div>
+          <div class="card-desc">Sinkronisasi otomatis dengan sumber data eksternal perusahaan.</div>
+
+          <!-- Confluence Card -->
+          <div class="connector-card">
+            <div class="connector-info">
+              <h5>Atlassian Confluence</h5>
+              <p>Default Spaces: <code>ENG</code>, <code>HR</code>, <code>OPS</code></p>
+            </div>
+            <button id="sync-confluence-btn" class="btn-sync">Sync Sekarang</button>
+          </div>
+
+          <!-- Notion Card -->
+          <div class="connector-card">
+            <div class="connector-info">
+              <h5>Notion Workspace</h5>
+              <p>Internal SOP & Tech Documentation</p>
+            </div>
+            <button id="sync-notion-btn" class="btn-sync">Sync Sekarang</button>
+          </div>
+
+          <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-glass); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted);">
+            💡 <strong>Tips:</strong> Pastikan kredensial API Confluence atau Notion sudah dikonfigurasi di file <code>.env</code> sebelum melakukan sinkronisasi.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 3: EXPLORER & HEALTH
+         ====================================================================== -->
+    <section id="tab-explorer" class="tab-content">
+      
+      <!-- Top Metrics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-title">Total Chunks Terindeks</div>
+          <div id="stat-total-vectors" class="stat-value">0</div>
+          <div class="stat-sub">Vektor tersimpan dalam ChromaDB</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">Koleksi Aktif</div>
+          <div id="stat-collection" class="stat-value" style="font-size: 1.25rem; word-break: break-all;">enterprise_knowledge</div>
+          <div class="stat-sub">Distance Metric: Cosine</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">LLM Generator</div>
+          <div class="stat-value" style="font-size: 1.3rem;">Ollama llama3</div>
+          <div class="stat-sub">Embedding: nomic-embed-text (768d)</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-title">Keamanan & RBAC</div>
+          <div class="stat-value" style="font-size: 1.3rem; color: var(--success);">Aktif (JWT)</div>
+          <div class="stat-sub">Roles: Admin, Engineering, Employee</div>
+        </div>
+      </div>
+
+      <!-- Developer & JWT Token Inspector -->
+      <div class="card">
+        <div class="card-title" style="justify-content: space-between;">
+          <span>🔑 JWT Token Inspector (Role Aktif)</span>
+          <button id="copy-token-btn" class="btn-sync">📋 Salin Token</button>
+        </div>
+        <div class="card-desc">Token Bearer ini secara otomatis dibuat dan dikirimkan pada setiap request API RAG untuk membatasi dokumen sesuai hak akses.</div>
+
+        <pre id="token-inspector" style="background: rgba(0, 0, 0, 0.4); padding: 1rem; border-radius: var(--radius-sm); color: var(--primary); font-family: monospace; font-size: 0.82rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid var(--border-glass); max-height: 160px;"></pre>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Script -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Ollama LLM Service (Local)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: enterprise_rag_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # Optional Vector DB: Qdrant (jika ingin menggantikan Chroma)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: enterprise_rag_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enterprise_rag_api
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - VECTOR_DB_TYPE=chroma
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  qdrant_data:
